@@ -1,0 +1,34 @@
+name: agent-auto-approve-merge
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  approve-agent-pr:
+    if: startsWith(github.event.pull_request.head.ref, 'agent/') && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Approve the disposable agent PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            const pr = await github.rest.pulls.get({ owner, repo, pull_number });
+            if (pr.data.state !== 'open' || pr.data.base.ref !== 'main' || !pr.data.head.ref.startsWith('agent/')) {
+              core.setFailed('PR no longer matches the disposable agent acceptance policy');
+              return;
+            }
+            await github.rest.pulls.createReview({
+              owner,
+              repo,
+              pull_number,
+              event: 'APPROVE',
+              body: 'Automated acceptance review for the disposable Paperclip Agent delivery fixture.'
+            });

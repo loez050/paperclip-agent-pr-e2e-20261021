@@ -1,0 +1,18 @@
+name: merge-queue-tests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  merge-queue-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the pull request
+        uses: actions/checkout@v4
+      - name: Run fixture tests
+        run: node --test
